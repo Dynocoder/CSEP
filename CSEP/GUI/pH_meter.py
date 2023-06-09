@@ -18,7 +18,8 @@ arduino = serial.Serial(arduino_port, arduino_baudrate)
 
 # Save the Value in a CSV file
 def save_data(value):
-    with open("data\data.csv", 'a') as data_file:
+
+    with open("data\data.csv", 'a', newline='', encoding='utf-8') as data_file:
         csv_wtr = csv.writer(data_file)
 
         csv_wtr.writerow(value)
