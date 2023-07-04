@@ -92,6 +92,8 @@ class dataWidget():
         self.valueText = tk.Label(self.dataWidget, text="Value: ", padx=5, pady=5)
         self.readValue = tk.Label(self.dataWidget, padx=5, pady=5)
 
+        self.startbtn = tk.Button(self.dataWidget, text="Start", command=self.startClick)
+
 
 
         # *********GRAPH MESS*****************
@@ -115,11 +117,19 @@ class dataWidget():
         self.valueText.grid(row=0, column=0)
         self.readValue.grid(row=0, column=1)
         self.graph_canvas.get_tk_widget().grid(row=0, column=2)
+        self.startbtn.grid(row=1, column=0)
     
+    def startClick(self):
+        self.getData()
 
     def getData(self):
-        self.readValue['text'] = self.arduino.ask_read("t")
-        self.window.after(1000, self.getData())
+        self.val = self.arduino.ask_read("t")
+        self.readValue.config(text=self.val)
+        self.dataWidget.update()
+        print("******************")
+        self.dataWidget.after(5000, self.getData)
+        
+
 
 if __name__ == "__main__":
     window()

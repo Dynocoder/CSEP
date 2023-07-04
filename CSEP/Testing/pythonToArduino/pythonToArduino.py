@@ -1,4 +1,5 @@
 import serial
+import time
 
 arduino = serial.Serial('com6', 9600)
 
@@ -13,9 +14,9 @@ def readVal():
 
 
 while True:
-
-    cmd = input("Enter Command: ")
+    cmd = "t"
     # encoding the string to utf-8.
     arduino.write(cmd.encode())
     print(readVal())
+    time.sleep(1)
     

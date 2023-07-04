@@ -3,7 +3,8 @@ import serial.tools.list_ports
 
 class PortCom:
     def __init__(self) -> None:
-        pass
+        self.setup = False
+        self.arduino = None
 
 
     def allocatePort(self, ComGUI):
@@ -13,6 +14,7 @@ class PortCom:
             self.arduino = serial.Serial(port, baud)
             self.arduino.timeout = 0.1
             print("done")
+            self.setup = True
             
             return True
         except:
@@ -20,6 +22,7 @@ class PortCom:
 
     def closePort(self):
         self.arduino.close()
+        self.setup = False
 
     """
     @param command - char type input that is sent to arduino to read value.
@@ -29,13 +32,14 @@ class PortCom:
     value to the serial port which is then collected and returned.
     """
     def ask_read(self, command):
-        self.arduino.reset_input_buffer()
+        # self.arduino.reset_input_buffer()
         # send the command through the com port
         self.arduino.write(command.encode())
         
         self.value = self.arduino.readline()
         self.value = self.value.decode("utf-8")
         self.value = self.value.rstrip().strip()
+        print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
         return self.value
 
 
