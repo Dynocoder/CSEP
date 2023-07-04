@@ -15,9 +15,10 @@ app.geometry("400x400")
 app.title("pH Meter")
 
 # ******* Arduino Setup *******
-arduino_port = 'COM4'
+arduino_port = 'COM6'
 arduino_baudrate = 9600
 arduino = serial.Serial(arduino_port, arduino_baudrate)
+arduino.timeout = 0.1
 # a = serial.Serial("COM4", 115200)
 
 

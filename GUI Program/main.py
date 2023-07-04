@@ -1,20 +1,16 @@
 import window as w
 import portcom as pc
 
+
+arduino_baudrate = 9600
+
+
+arduino = pc.PortCom()
 windowobj = w.window("200x200", "tt")
 
-main_frame = w.mainScreen(windowobj.window)
+main_frame = w.mainScreen(windowobj.window, arduino)
 
-arduinoport = main_frame.get_selected_port()
-arduino = pc.portcom(arduinoport, 9600)
-
-
-
-
-# arduino = pc.portcom("com5", 9600)
-
-
-
+datawidget = w.dataWidget(windowobj.window, "Temperature Sensor", arduino=arduino)
 
 
 windowobj.window.mainloop()
