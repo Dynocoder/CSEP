@@ -34,7 +34,11 @@ class mainScreen():
         self.mainlabel = tk.LabelFrame(self.window, text="Main Menu", padx=5, pady=5)
         self.text = tk.Label(self.mainlabel, text="Select a COM port: ", padx=5, pady=5)
         self.port_menu()
-        self.connectbtn = tk.Button(self.mainlabel, text="Connect", command=self.connect)
+        self.connectbtn = tk.Button(self.mainlabel, text="Connect", command=self.connect, padx=5, pady=5)
+
+
+        self.filelabel = tk.Label(self.mainlabel, text="Enter Fine Name: ", padx=5, pady=5)
+        self.filetext = tk.Text(self.mainlabel, height=1, width=24, padx=5, pady=5)
         
 
 
@@ -64,7 +68,9 @@ class mainScreen():
         self.mainlabel.grid(row=0, column=0, padx=5, pady=5, sticky="news")
         self.text.grid(row=0, column=0)
         self.port_menu_widget.grid(row=0, column=1)
-        self.connectbtn.grid(row=0, column=2, padx=5, pady=5)
+        self.connectbtn.grid(row=0, column=3)
+        self.filelabel.grid(row=1, column=0)
+        self.filetext.grid(row=1, column=1)
 
 # get all the serial ports as a list.
     def get_serial_ports(self):
@@ -80,6 +86,8 @@ class mainScreen():
             self.connectbtn['text'] = "Disconnect"
             self.connectbtn['command'] = self.disconnect
             self.port_menu_widget['state'] = "disable"
+        
+        print(self.filetext.get("1.0", 'end'))
     
 
     def disconnect(self):
