@@ -250,14 +250,11 @@ class dataWidget():
                 self.val = self.arduino.ask_read("t")
                 
 
-
                 self.updateGUI(value=self.val)
                 
-
-
                 # if the user wants to save the data
                 if self.saveToFile():
-                    pass
+                    self.save_data_csv(self.val)
                 self.dataWidget.update()
                 print("***")
                 self.dataWidget.after(self.delaySeconds*1000, self.getData)
@@ -268,22 +265,9 @@ class dataWidget():
             return
     
     def updateGUI(self, value):
+
         # Updating the data on the GUI
         self.readValue.config(text=value)
-
-        #Updating the Graph using a csv file
-        # with open(self.file_name+".csv", 'r') as file:
-        #     reader = csv.DictReader(file)
-        #     for row in reader:
-        #         if float(row['time']) % 1 == 0:
-        #             self.times.append(row['time'])
-        #             try:
-        #                 self.values.append(float(row['value']))
-        #             except:
-        #                 self.values.append(self.values[-1])
-        #         else:
-        #             pass
-
 
         # Updating the Graph without csv
         # Increment by time 1 second 
@@ -303,6 +287,32 @@ class dataWidget():
 
         # Drawing the canvas again
         self.graph_canvas.draw()
+
+
+    def save_data_csv(self, value):
+        file_path = self.file_name + ".csv"
+        # Read the Last time value
+        with open(file_path, 'r') as read:
+            reader = csv.DictReader(read)
+            reader_list = list(reader)
+            fields = reader.fieldnames
+
+            # If the File is newly Created 
+            if len(reader_list) >= 1:
+                print(reader_list[-1][fields[0]])
+                last_time = reader_list[-1]
+                new_time = int(last_time[fields[0]]) + self.delaySeconds
+            else:
+                new_time = 0
+
+        read.close()
+
+        # Write the data in the csv file with a time increment of 1 second
+        with open(file_path, 'a', newline='') as write:
+            writer = csv.DictWriter(write, fieldnames=fields)
+            writer.writerow({fields[0]: new_time, fields[1]: value})
+
+        write.close()
 
 
     
