@@ -1,14 +1,20 @@
 import window as w
+import mainScreen as ms
+import datawidget as dw
 import portcom as pc
 
 
 arduino_baudrate = 9600
 
+print()
 
 arduino = pc.PortCom()
-windowobj = w.window("Temperature GUI")
+windowobj = w.Window()
 
-main_frame = w.mainScreen(windowobj.window, serial=arduino)
+
+
+main_frame = ms.MainScreen(windowobj.window, serial=arduino)
+
 
 
 # Wait Until the Information screen has been submitted
@@ -23,6 +29,6 @@ while arduino.getInitializedStatus() == False and windowobj.window.state == "nor
     windowobj.window.update()
 
 # if arduino.setup:
-datawidget = w.dataWidget(windowobj.window, "Temperature Sensor", arduino=arduino, file_name = main_frame.getFileName(), delaySeconds=5)
+datawidget = dw.DataWidget(windowobj.window, "Temperature Sensor", arduino=arduino, file_name = main_frame.getFileName(), delaySeconds=5)
 
 windowobj.window.mainloop()

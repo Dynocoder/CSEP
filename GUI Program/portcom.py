@@ -68,13 +68,9 @@ class PortCom:
             reader = csv.DictReader(read)
             reader_list = list(reader)
             fields = reader.fieldnames
-            # print("fields", fields)
-            # print(len(reader_list))
 
             # If the File is newly Created 
             if len(reader_list) > 0:
-                # print("CSV List: ", reader_list)
-                # print(reader_list[-1][fields[0]])
                 last_time = reader_list[-1]
                 new_time = int(last_time[fields[0]]) + 1
             else:
