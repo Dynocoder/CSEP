@@ -48,33 +48,29 @@ class PortCom:
         self.value = self.value.decode("utf-8")
         self.value = self.value.rstrip().strip()
 
-
-        # Save in csv
-        self.save_data_csv(self.value)
-
         return self.value
     
+    '''
+    @return boolean - returns true if arduino is connected, false otherwise.
+    '''
     def getInitializedStatus(self):
         return self.initialized
 
 
-    def save_data_csv(self, value):
+    def save_data_csv(self, value, file_path):
 
-        self.check_data_file()
+        # self.check_data_file()
 
-        file_path = "data.csv"
+        # file_path = "data.csv"
 
         # Read the Last time value
         with open(file_path, 'r') as read:
             reader = csv.DictReader(read)
             reader_list = list(reader)
             fields = reader.fieldnames
-            print("fields", fields)
 
             # If the File is newly Created 
             if len(reader_list) > 0:
-                print("CSV List: ", reader_list)
-                print(reader_list[-1][fields[0]])
                 last_time = reader_list[-1]
                 new_time = int(last_time[fields[0]]) + 1
             else:

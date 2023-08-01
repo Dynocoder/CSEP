@@ -95,7 +95,7 @@ the function fills two lists (times and values) reading from csv file
 
 then the function creates a new plot and redraws the canvas.
 """
-def update_graph(canvas, graph):
+def update_graph(self, canvas, graph):
 
     times = []
     values = []
