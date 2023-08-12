@@ -1,12 +1,12 @@
 import tkinter as tk
 import serial
-from serial import Serial
 import csv
-import os
 import time
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg 
+
+
 
 
 app = tk.Tk()
@@ -16,34 +16,8 @@ app.title("pH Meter")
 
 # ******* Arduino Setup *******
 arduino_port = 'COM6'
-arduino_baudrate = 9600
+arduino_baudrate = 115200
 arduino = serial.Serial(arduino_port, arduino_baudrate)
-arduino.timeout = 0.1
-# a = serial.Serial("COM4", 115200)
-
-
-"""
-Checks whether the file exists or not.
-deletes and creates a new one with the field names if a file already exists.
-"""
-def check_data_file():
-
-    file_path = 'data.csv'
-    field_names = ["time", "value"]
-
-    # Checks whether the file exists or not.
-    try:
-        with open(file_path, 'r') as rdr:
-            reader = csv.reader(rdr)
-            if any(reader):
-                rdr.close()
-                os.remove(file_path)
-                check_data_file()
-    except FileNotFoundError or FileExistsError:
-        with open(file_path, 'w', newline='') as wtr:
-            write = csv.DictWriter(wtr, fieldnames=field_names)
-            write.writeheader()
-        wtr.close()
 
 
 
@@ -55,7 +29,23 @@ value - the value to write in the csv
 """
 def save_data_csv(value):
 
+    global file_path 
     file_path = "data.csv"
+
+    field_names = ["time", "value"]
+
+    # Checks whether the file exists or not.
+    try:
+        with open(file_path, 'r') as rdr:
+            reader = csv.reader(rdr)
+            if any(reader):
+                pass
+        rdr.close()
+    except FileNotFoundError or FileExistsError:
+        with open(file_path, 'w', newline='') as wtr:
+            write = csv.DictWriter(wtr, fieldnames=field_names)
+            write.writeheader()
+        wtr.close()
 
     # Read the Last time value
     with open(file_path, 'r') as read:
@@ -95,7 +85,7 @@ the function fills two lists (times and values) reading from csv file
 
 then the function creates a new plot and redraws the canvas.
 """
-def update_graph(self, canvas, graph):
+def update_graph(canvas, graph):
 
     times = []
     values = []
@@ -113,12 +103,7 @@ def update_graph(self, canvas, graph):
             else:
                 pass
 
-
-
-
     # Plotting the lists on the graph
-    # plt.xlim(10)
-    plt.xscale('linear')
     graph.plot(times, values, color='black')
 
     # Drawing the canvas again
@@ -135,8 +120,10 @@ Working:
 Waits until the arduino starts passing values.
 
 Resets the input buffer to get the the current value.
-""" 
+"""
 def read_value():
+    while arduino.in_waiting == 0:
+        pass
 
     # Flushing out all the values stored in the buffer.
     arduino.reset_input_buffer()
@@ -145,7 +132,6 @@ def read_value():
     value = arduino.readline()
     value = value.decode("utf-8")
     value = value.rstrip().strip()
-
 
     # Save the Data as a csv
     save_data_csv(value)
@@ -161,7 +147,7 @@ def read_value():
 Update the GUI with the value received (Near realtime)
 
 Flow:
-Read the value from the serial port.
+Read the value from the arduino.
 update the value on the GUI
 repeat after 1 second.
 """
@@ -170,11 +156,7 @@ def update_gui(canvas, graph):
     value_label.config(text=value)
     update_graph(canvas, graph)
     app.update()
-
-    print("##################################################")
-    
-
-    app.after(5000, update_gui(canvas, graph))
+    app.after(1000, update_gui(canvas, graph))
 
 
 # Value Label
@@ -191,17 +173,6 @@ graph_canvas.draw()
 
 # Converts the canvas to a widget tkinter can work with
 graph_canvas.get_tk_widget().pack()
-
-
-# # Clear input buffer from previous values.
-# arduino.reset_input_buffer()
-
-
-check_data_file()
-
-# Waiting until the arduino has started to push data in the serial port
-while arduino.in_waiting == 0:
-    pass
 
 
 update_gui(graph_canvas, graph_plot)
