@@ -2,26 +2,43 @@ import serial
 import serial.tools.list_ports
 import csv
 import os
+import re
+import tkinter as tk
+import time
 
 
 class PortCom:
     def __init__(self) -> None:
         self.initialized = False
         self.arduino = None
+        self.baudrate = 9600
+        # Channel array
+        self.channels = ["c100", "c200", "c300", "c400"]
+        # System dictionary with their associated commands.
+        self.systems = {"Temperature": "t0", "Load Cell": "l0", "Load Cell Calibrate": "lc"}
 
 
-    def allocatePort(self, ComGUI):
-        port = ComGUI.selected_port.get()
+    def allocatePort(self, selected_port):
+        port = selected_port
         baud = 9600
+        print(port)
+        # self.arduino = serial.Serial(port=port, baudrate=baud)
+        # self.arduino.timeout = 0.1
+        # self.arduino.open()
+        
         try:
-            self.arduino = serial.Serial(port, baud)
+            self.arduino = serial.Serial(port=port, baudrate=baud)
             self.arduino.timeout = 0.1
+            # self.arduino.open()
             print("done")
             self.initialized = True
             
+            
             return True
         except:
+            self.initialized = False
             print("Error")
+            tk.messagebox.showerror('Port Disconnected', 'Error: Could not connect to port')
 
     def closePort(self):
         try:
@@ -33,22 +50,46 @@ class PortCom:
             return False
 
     """
-    @param command - char type input that is sent to arduino to read value.
+    @param command - char type input that is sent to arduino to read readings.
 
     the function takes in a command (type: char), the command needs to be programmed on the arduino side.
     the function passes that command through the serial port to the arduino, then, the arduino returns a string
-    value to the serial port which is then collected and returned.
+    readings to the serial port which is then collected and returned.
     """
-    def ask_read(self, command):
-        self.arduino.reset_input_buffer()
-        # send the command through the com port
-        self.arduino.write(command.encode())
+    def ask_read(self):
+        # self.arduino.reset_input_buffer()
+        # com = (str)(self.channels)
+        # self.arduino.write(com.encode("utf-8"))
+        # print(com.encode("utf-8"))
         
-        self.value = self.arduino.readline()
-        self.value = self.value.decode("utf-8")
-        self.value = self.value.rstrip().strip()
+        # print("command sent: ", com.encode())
 
-        return self.value
+
+
+        if (self.arduino.in_waiting > 0):
+            self.arduino.reset_input_buffer()
+            com = (str)(self.channels)
+            self.arduino.write(com.encode("utf-8"))
+            print(com.encode("utf-8"))
+            # print("Waiting......")
+            self.readings = self.arduino.readline()
+            # send the command through the com port
+            
+        # self.arduino.reset_input_buffer()
+            
+        
+        # self.readings = self.readings.decode("utf-8")
+        # self.readings = self.readings.rstrip().strip()
+
+            print("received: ", self.readings.decode("utf-8"))
+
+        return 0
+    
+    """
+    sets up the channels array to pass to the arduino 
+    """
+    def set_channel(self, channel, command):
+        self.channels[channel-1] = f"c{channel}{command}"
     
     '''
     @return boolean - returns true if arduino is connected, false otherwise.
@@ -57,13 +98,13 @@ class PortCom:
         return self.initialized
 
 
-    def save_data_csv(self, value, file_path):
+    def save_data_csv(self, readings, file_path):
 
         # self.check_data_file()
 
         # file_path = "data.csv"
 
-        # Read the Last time value
+        # Read the Last time readings
         with open(file_path, 'r') as read:
             reader = csv.DictReader(read)
             reader_list = list(reader)
@@ -81,14 +122,14 @@ class PortCom:
         # Write the data in the csv file with a time increment of 1 second
         with open(file_path, 'a', newline='\n') as write:
             writer = csv.DictWriter(write, fieldnames=fields)
-            writer.writerow({fields[0]: new_time, fields[1]: value})
+            writer.writerow({fields[0]: new_time, fields[1]: readings})
 
         write.close()
         
     def check_data_file(self):
 
         file_path = 'data.csv'
-        field_names = ["time", "value"]
+        field_names = ["time", "readings"]
 
         # Checks whether the file exists or not.
         try:

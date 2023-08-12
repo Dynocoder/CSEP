@@ -15,7 +15,10 @@ class Window():
         self.window = tk.Tk()
         self.window.title("Lab Controller")
         self.window.wm_protocol("WM_DELETE_WINDOW", self.quit_program)
+        print(self.window.winfo_children())
+        print(self.window.children)
         self.window.update()
+
     
     
     def quit_program(self):

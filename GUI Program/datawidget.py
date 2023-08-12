@@ -18,7 +18,7 @@ class DataWidget(Window):
     @param datafile_path - the path of the data file where the data has to be saved.
     '''
 
-    def __init__(self, root, title, arduino, file_name, delaySeconds) -> None:
+    def __init__(self, root, title, arduino, file_name, delaySeconds, row, column) -> None:
         Window.__init__(self)
         self.title = title
         self.window = root
@@ -26,6 +26,8 @@ class DataWidget(Window):
         self.delaySeconds = delaySeconds
         self.fontsize = 16
         self.file_name = file_name
+        self.row = row
+        self.column = column
         self.times = []
         self.values = []
 
@@ -62,7 +64,7 @@ class DataWidget(Window):
     Arranges the display widgets in the window.
     '''
     def publish(self):
-        self.dataWidget.grid(row=1, column=0, sticky="nsew")
+        self.dataWidget.grid(row=self.row, column=self.column, sticky="nsew")
         self.valueText.grid(row=0, column=0)
         self.readValue.grid(row=0, column=1)
         self.valueWidget.grid(row=0, column=0)

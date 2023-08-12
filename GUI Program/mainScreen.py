@@ -2,6 +2,8 @@ import tkinter as tk
 import tkinter.messagebox
 import serial.tools.list_ports
 from window import Window
+import datawidget as dw
+import widgetmanager as wm
 import portcom
 import csv
 
@@ -13,10 +15,12 @@ class MainScreen(Window):
     '''
     def __init__(self, window, serial) -> None:
         self.window = window
-        self.arduino_port = serial
+        self.port_manager = serial
         # self.arduino = pc.PortCom
         self.file_name = "data"
-        self.mainlabel = tk.LabelFrame(self.window, text="Main Menu", padx=5, pady=5)
+        self.mainlabel = tk.LabelFrame(self.window, text="Main Menu", padx=5, pady=5, width=30)
+        #dataWidget Label
+        self.widget_label = tk.Frame(self.window,  padx=5, pady=5)
         self.text = tk.Label(self.mainlabel, text="Select a COM port: ", padx=5, pady=5)
         self.port_menu()
         self.connectbtn = tk.Button(self.mainlabel, text="Connect", command=self.connect, padx=5, pady=5)
@@ -32,34 +36,36 @@ class MainScreen(Window):
         self.publish()
     
 
+        '''
+    Arranges the mainframes widgets in the window.
+    '''
+    def publish(self):
+        self.mainlabel.grid(row=0, column=0, padx=5, pady=5, columnspan=3, rowspan=2, sticky="nsew")
+        # Data Frame Widget Label
+        self.widget_label.grid(row=3, column=0, columnspan=4)
+        self.text.grid(row=0, column=0)
+        self.port_menu_widget.grid(row=0, column=1)
+        self.connectbtn.grid(row=0, column=3)
+        self.filelabel.grid(row=1, column=0)
+        self.filetext.grid(row=1, column=1)
 
 
-    """
-    @param self
-    return none
 
-    self.port_menu_widget - the optionmenu object
-
-    displays the port selection menu on the screen
-    """
     def port_menu(self):
+        """
+        @param self
+        return none
+
+        self.port_menu_widget - the optionmenu object
+
+        displays the port selection menu on the screen
+        """
         # Port Selection Menu
         self.com_ports = self.get_serial_ports()
         self.selected_port = tk.StringVar(self.mainlabel)
         self.selected_port.set(f"{self.com_ports[0][0]}")  # Set default port
         self.port_menu_widget = tk.OptionMenu(self.mainlabel, self.selected_port, *[f"{port[0]}" for port in self.com_ports])
         
-
-    '''
-    Arranges the mainframes widgets in the window.
-    '''
-    def publish(self):
-        self.mainlabel.grid(row=0, column=0, padx=5, pady=5, sticky="news")
-        self.text.grid(row=0, column=0)
-        self.port_menu_widget.grid(row=0, column=1)
-        self.connectbtn.grid(row=0, column=3)
-        self.filelabel.grid(row=1, column=0)
-        self.filetext.grid(row=1, column=1)
 
     # get all the serial ports as a list.
     def get_serial_ports(self):
@@ -77,21 +83,22 @@ class MainScreen(Window):
 
         # If the File is successfully created.
         if self.createfile(self.file_name):
-            # self.arduinooo = pc.allocatePort(self.arduino_port)
-            print(type(self.arduino_port))
+            # Allocate the selected port as the arduino communication port
+            self.port_manager.allocatePort(self.selected_port.get())
 
 
             # if the arduino port was successfully allocated
-            if self.arduino_port.allocatePort(self):
+            if self.port_manager.getInitializedStatus():
                 self.connectbtn['text'] = "Disconnect"
                 self.connectbtn['command'] = self.disconnect
                 self.port_menu_widget['state'] = "disable"
                 self.filetext['state'] = "disable"
+                self.wm = wm.WidgetManager(self.window, self.widget_label, self.port_manager)
         
     # If the disconnect button is pressed
     def disconnect(self):
         print("Disconnect pressed!")
-        if self.arduino.closePort():
+        if self.port_manager.closePort():
             self.port_menu_widget['state'] = "active"
             self.connectbtn['text'] = "Connect"
             self.connectbtn['command'] = self.connect

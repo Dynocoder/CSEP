@@ -8,27 +8,27 @@ arduino_baudrate = 9600
 
 print()
 
-arduino = pc.PortCom()
+port_manager = pc.PortCom()
 windowobj = w.Window()
 
 
 
-main_frame = ms.MainScreen(windowobj.window, serial=arduino)
+main_frame = ms.MainScreen(windowobj.window, serial=port_manager)
 
 
 
-# Wait Until the Information screen has been submitted
-while main_frame.getBtnText() == "Connect":
-    windowobj.window.update()
-    # print(main_frame.getBtnText())
+# # Wait Until the Information screen has been submitted
+# while main_frame.getBtnText() == "Connect":
+#     windowobj.window.update()
+#     # print(main_frame.getBtnText())
     
 
 # wait until the port is initialized, and the window is still open.
-while arduino.getInitializedStatus() == False and windowobj.window.state == "normal":
-    # print(arduino.getInitializedStatus())
-    windowobj.window.update()
+# while port_manager.getInitializedStatus() == False and windowobj.window.state == "normal":
+#     # print(port_manager.getInitializedStatus())
+#     windowobj.window.update()
 
-# if arduino.setup:
-datawidget = dw.DataWidget(windowobj.window, "Temperature Sensor", arduino=arduino, file_name = main_frame.getFileName(), delaySeconds=5)
+# if port_manager.setup:
+# datawidget = dw.DataWidget(windowobj.window, "Temperature Sensor", port_manager=port_manager, file_name = main_frame.getFileName(), delaySeconds=5)
 
 windowobj.window.mainloop()
