@@ -1,25 +1,31 @@
+"""
+The Widget Manager object, creates the widget manager menu. Contains methods to control the channels and the 
+communication with serial port.
+"""
+
 import tkinter as tk
-import datawidget as dw
 from tkinter import ttk
 import displaygui
+import threading
+import csv
 
 
 class WidgetManager():
 
-    def __init__(self, root, widget_frame, port_manager):
+    def __init__(self, root, widget_frame, port_manager, main_screen):
         self.window = root
+        self.mainscreen_object = main_screen
         self.widget_frame = widget_frame
         self.port_manager = port_manager
+        self.read_thread = False
+        self.fieldnames = ["time"]
+        self.fieldname_written = False
         self.widgets = ["Temperature", "pH", "Load Cell"]
         self.delay = [1, 5, 10, 15, 30, 45, 60, 90, 120]
         self.children = self.window.winfo_children()
         self.systems = {"Temperature": "t0", "Load Cell": "l0", "Load Cell Calibrate": "lc"}
 
         self.display = displaygui.DisplayGUI(self.window, self.port_manager)
-
-        # print("b:",self.children[0].grid_forget, "type: ", type(self.children[0]))
-
-        print(self.window.children)
 
 
         # Widget Manager Tab
@@ -52,7 +58,8 @@ class WidgetManager():
         self.stop_stream = tk.Button(self.widget_manager, text="Stop", padx=5, pady=5, command=self.stop)
 
         # Start/Stop Saving
-        self.start_saving = tk.Checkbutton(self.widget_manager, text="Start Saving", padx=5, pady=5)
+        self.save_data = tk.BooleanVar()
+        self.start_saving = tk.Checkbutton(self.widget_manager, text="Start Saving", variable=self.save_data, padx=5, pady=5)
 
 
         self.publish()
@@ -72,6 +79,7 @@ class WidgetManager():
 
         self.start_stream.grid(row=0, column=3, sticky="", padx=15)
         self.stop_stream.grid(row=0, column=4, sticky="", padx=15)
+        self.stop_stream['state'] = 'disable'
         self.start_saving.grid(row=1, column=3, columnspan=2, padx=15)
 
 
@@ -132,11 +140,13 @@ class WidgetManager():
     def start(self):
         # Disable adding new Frames and option menus
         self.add_widget['state'] = "disable"
+        self.remove_widget['state'] = "disable"
         self.widget_menu['state'] = "disable"
         self.delay_menu['state'] = "disable"
-        self.remove_widget['state'] = "disable"
+        self.start_stream['state'] = "disable"
+        self.stop_stream['state'] = "active"
+        self.read_thread = True
         
-        # get data
         self.getData()
 
     def stop(self):
@@ -145,10 +155,10 @@ class WidgetManager():
         self.widget_menu['state'] = "active"
         self.delay_menu['state'] = "active"
         self.remove_widget['state'] = "active"
-
-    def saveToFile(self):
-        pass
-
+        self.start_stream['state'] = "active"
+        self.stop_stream['state'] = "disable"
+        self.read_thread = False
+        self.port_manager.read = False
 
 
     def getData(self):
@@ -157,32 +167,83 @@ class WidgetManager():
 
         """
         # if the arduino is connected
-        if self.port_manager.getInitializedStatus():
-            # # Continue to get the data until the user has not pressed stop.
-            # # if self.start_stream['text'] == "Stop":
-            # self.val = self.port_manager.ask_read("t")
-            
+        if self.read_thread:
+            if self.port_manager.getPortStatus():
+                # print("port status" + self.port_manager.getPortStatus())
+                self.port_manager.read = True
+                self.port_manager.t1 = threading.Thread(
+                    target=self.port_manager.read_thread, args=(self, self.display,), daemon=True)
+                self.port_manager.t1.start()
+                
+            else:
+                tk.messagebox.showerror('Port Disconnected', 'Error: Port Disconnected. Can not read Value')
+                return
 
-            # # self.updateGUI(value=self.val)
-            # print(self.val)
-            # self.display.updateFrame(self.val)
-            
-            # # if the user wants to save the data
-            # # if self.saveToFile():
-            # #     self.save_data_csv(self.val)
-            # self.display.frames[self.display.frameCount-1].update()
-            # print("***")
-            # delay = (int)(self.sdelay.get())
-            # self.display.frames[self.display.frameCount-1].after(delay*1000, self.getData)
-            # # else:
-            # #     return
 
-            self.display.updateFrames()
-            # pass
-            
+    def save_to_file(self, response_list, time):
+
+        data_list = []
+
+        for i in range(self.display.frameCount):
+            data_list.append(float(response_list[i]))
+
+        
+
+
+        row_data = {}
+        
+
+        if self.fieldname_written:
+
+            # Opening and editing the file
+            with open(self.mainscreen_object.get_file_name() + ".csv", 'a', newline="") as wtr:
+                writer = csv.DictWriter(wtr, fieldnames=self.fieldnames)
+                if len(self.display.times[0]) > 0:
+                    row_data = {"time": int(self.display.times[0][-1])}
+                else:
+                    row_data = {"time": 0}
+                row_data.update({f"c{i}": value for i, value in enumerate(data_list, start=1)})
+                print(row_data)
+                print(self.fieldnames)
+                writer.writerow(row_data)
+            wtr.close()
         else:
-            tk.messagebox.showerror('Port Disconnected', 'Error: Port Disconnected. Can not read Value')
-            return
+            # Generating Fieldnames
+            for i in range(self.display.frameCount):
+                self.fieldnames = ["time"] + [f'c{i+1}' for i in range(self.display.frameCount)]
+            with open(self.mainscreen_object.get_file_name() + ".csv", 'w', newline="") as wtr:
+                writer = csv.DictWriter(wtr, fieldnames=self.fieldnames)
+                writer.writeheader()
+            wtr.close()
+            self.fieldname_written = True
+            self.save_to_file(response_list, time)
+
+
+
+
+        # # Reading throught the created file
+        # with open (self.mainscreen_object.get_file_name() + ".csv", 'r') as rdr:
+        #     reader = csv.DictReader(rdr)
+        #     print("rdr_obj ", reader)
+        #     print("rdline", rdr.readline())
+        #     print("rdlinelen", len(rdr.readline()))
+        #     # If the created file is empty. (no header data)
+        #     # Checking whether the file is new (no headers written)
+        #     if len(rdr.readlines()) == 0:
+        #         print("if called")
+        #         with open(self.mainscreen_object.get_file_name() + ".csv", 'w') as wtr:
+        #             writer = csv.DictWriter(wtr, fieldnames=self.fieldnames)
+        #             writer.writeheader()
+        #             print("dddd", rdr.readlines())
+        #         wtr.close()
+        #     else:
+        #         with open(self.mainscreen_object.get_file_name() + ".csv", 'r+', newline="") as wtr:
+        #             writer = csv.DictWriter(wtr, fieldnames=self.fieldnames)
+        #             reader = csv.DictReader(wtr)
+        #             print("rowwwww: ", wtr.readline())
+                    
+                
+
 
 
 if __name__ == "__main__":

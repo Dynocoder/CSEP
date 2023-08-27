@@ -1,11 +1,16 @@
+"""
+MainScreen Object, creates the main port selection and file saving window, contains methods to create the saving file.
+"""
+
+
 import tkinter as tk
 import tkinter.messagebox
 import serial.tools.list_ports
 from window import Window
-import datawidget as dw
 import widgetmanager as wm
 import portcom
 import csv
+import os
 
 class MainScreen(Window):
 
@@ -36,7 +41,7 @@ class MainScreen(Window):
         self.publish()
     
 
-        '''
+    '''
     Arranges the mainframes widgets in the window.
     '''
     def publish(self):
@@ -48,7 +53,6 @@ class MainScreen(Window):
         self.connectbtn.grid(row=0, column=3)
         self.filelabel.grid(row=1, column=0)
         self.filetext.grid(row=1, column=1)
-
 
 
     def port_menu(self):
@@ -63,10 +67,13 @@ class MainScreen(Window):
         # Port Selection Menu
         self.com_ports = self.get_serial_ports()
         self.selected_port = tk.StringVar(self.mainlabel)
-        self.selected_port.set(f"{self.com_ports[0][0]}")  # Set default port
-        self.port_menu_widget = tk.OptionMenu(self.mainlabel, self.selected_port, *[f"{port[0]}" for port in self.com_ports])
+        try:
+            self.selected_port.set(f"{self.com_ports[0][0]}")  # Set default port
+            self.port_menu_widget = tk.OptionMenu(self.mainlabel, self.selected_port, *[f"{port[0]}" for port in self.com_ports])
+        except Exception as e:
+            self.selected_port.set("-")
+            self.port_menu_widget = tk.OptionMenu(self.mainlabel, self.selected_port, *["-"])
         
-
     # get all the serial ports as a list.
     def get_serial_ports(self):
         self.ports = serial.tools.list_ports.comports()
@@ -88,12 +95,12 @@ class MainScreen(Window):
 
 
             # if the arduino port was successfully allocated
-            if self.port_manager.getInitializedStatus():
+            if self.port_manager.getPortStatus():
                 self.connectbtn['text'] = "Disconnect"
                 self.connectbtn['command'] = self.disconnect
                 self.port_menu_widget['state'] = "disable"
                 self.filetext['state'] = "disable"
-                self.wm = wm.WidgetManager(self.window, self.widget_label, self.port_manager)
+                self.wm = wm.WidgetManager(self.window, self.widget_label, self.port_manager, self)
         
     # If the disconnect button is pressed
     def disconnect(self):
@@ -109,7 +116,7 @@ class MainScreen(Window):
         # file_path = filepath
         print("create File: ", filepath)
         file_path = filepath + ".csv"
-        field_names = ["time", "value"]
+        field_names = ["time", "c1", "c2", "c3", "c4"]
 
         # Checks whether the file exists or not. If it does, it removes it and calls the function again.
         try:
@@ -117,21 +124,24 @@ class MainScreen(Window):
                 reader = csv.reader(rdr)
                 if any(reader):
                     rdr.close()
-                    deleteCurrentFile = tk.messagebox.askokcancel(title="File Already Exists", message="Do you want to remove the file and create a new one?")
+                    deleteCurrentFile = tk.messagebox.askokcancel(title="File Already Exists", 
+                                                                  message="Do you want to remove the file and create a new one?")
                     if deleteCurrentFile:
                         os.remove(file_path)
                         self.createfile(file_path=filepath)
                         return True
                     else:
                         return False
+                else:
+                    with open(file_path, 'w', newline='') as wtr:
+                        return True
         except:
             with open(file_path, 'w', newline='') as wtr:
-                write = csv.DictWriter(wtr, fieldnames=field_names)
-                write.writeheader()
+                
                 return True
             wtr.close()
     
-    def getFileName(self):
+    def get_file_name(self):
         return self.file_name
     
     def getBtnText(self):

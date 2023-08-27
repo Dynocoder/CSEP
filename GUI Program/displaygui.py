@@ -1,3 +1,7 @@
+"""
+The main data display object, creates the channel frame, with the graph and label in it.
+"""
+
 import tkinter as tk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg 
@@ -20,13 +24,13 @@ class DisplayGUI():
         self.frameCount = 0
 
         # Array of figs(graph figures), value labels for the frames. indexed respective to the index of frames.
+        # follows [[Matplotlib_figure, Matplotlib_subplot, Matplotlib_tkinter_object]] structure.
         self.figs = []
         self.valueLabel = []
 
         # Times and values for the graphs
         self.times=[]
         self.values=[]
-
 
     def addFrame(self, frameName):
         '''
@@ -55,6 +59,8 @@ class DisplayGUI():
 
             self.addValueLabel()
 
+            # self.values.append([])
+
             # value_text = tk.Label(self.frames[self.frameCount-1], text="Value: ", padx=25, pady=5, font=('Arial', self.fontsize)).grid(row=0, column=0)
             # self.value = tk.Label(self.frames[self.frameCount-1], padx=25, pady=5, font=('Arial', self.fontsize)).grid(row=1, column=0)
 
@@ -78,7 +84,6 @@ class DisplayGUI():
 
         print(self.port_manager.channels)
 
-
     """
     Adds a Value label to the frame.
     """
@@ -87,8 +92,8 @@ class DisplayGUI():
 
         self.valueLabel[self.frameCount-1].grid(row=0, column = 0)
 
-        self.values.append([0])
-        self.times.append([0])
+        self.values.append([])
+        self.times.append([])
 
     def AddGraph(self):
         '''
@@ -97,65 +102,71 @@ class DisplayGUI():
         '''
         # Setting up the plot for the each Frame
         self.figs.append([])
+        print("figs list ", self.figs)
         # Initialize figures
-        self.figs[self.frameCount-1].append(plt.Figure(figsize=(6, 4), dpi=80))
+        self.figs[self.frameCount-1].append(
+            plt.Figure(figsize=(6, 4), dpi=80))
+        print("figs ", self.figs[self.frameCount-1])
         # Initialize the plot
         self.figs[self.frameCount-1].append(
             self.figs[self.frameCount-1][0].add_subplot(111))
+        print("figs with subplot ", self.figs[self.frameCount-1])
         # Initialize the chart
         self.figs[self.frameCount-1].append(FigureCanvasTkAgg(
             self.figs[self.frameCount-1][0], master=self.frames[self.frameCount-1]))
-
+        print("figs after canvas tkagg", self.figs[self.frameCount-1])
         self.figs[self.frameCount-1][2].get_tk_widget().grid(
             column=2, row=0, columnspan=4, rowspan=17,  sticky="n")
         
-        print(self.figs)
+        print("fig after all operations" , self.figs)
 
-    def updateFrame(self, value):
-        # self.valueLabel[self.frameCount-1].config(text=value)
-        self.figs[self.frameCount-1][1].plot(self.times[self.frameCount-1], self.values[self.frameCount-1], color='black')
-        # # self.figs([self.frameCount-1][1].canvas.draw())
-        # self.figs[self.frameCount-1][0].canvas.draw()
-        print(self.figs[self.frameCount-1][0])
-        self.updateGUI(value)
-        # self.updateGUI(value)
+    def updateFrameData(self, value, time_delay):
+        # updating the values list
+        print(len(self.values))
 
-    def updateFrames(self):
-        while True:
-            self.port_manager.ask_read()
-            time.sleep(1)
+        save_data_list = []
 
-
-    # def 
-
-    def updateGUI(self, value):
-
-        # Updating the data on the GUI
-        self.valueLabel[self.frameCount-1].config(text=value)
-
-        # Updating the Graph without csv
-        # Increment by time 1 second 
-        if len(self.times[self.frameCount-1]) > 0:
-            self.times[self.frameCount-1].append(self.times[self.frameCount-1][-1]+1)
-        else:
-            self.times[self.frameCount-1].append([0])
-        self.values[self.frameCount-1].append(float(value))
-
-        # print("Time: ", time)
-        print("Value: ", value)
         
-        # Plotting the lists on the graph
-        # plt.xlim(10)
-        plt.xscale('linear')
-        # self.graph_plot.plot(self.times[self.frameCount-1], self.values[self.frameCount-1], color='black')
-        # self.AddGraph()
+        for i in range(len(self.values)):
+            print(float(value[i]))
+            try:
+                # appending the value to the respective list in values lists
+                self.values[i].append(float(value[i]))
+                # save_data_list.append(value[i])
 
-        # Drawing the canvas again
-        # self.graph_canvas.draw()
-        self.figs[self.frameCount-1][0].canvas.draw()
+                # appending time values
+                if len(self.times[i]) == 0:
+                    self.times[i].append(0)
+                else:
+                    self.times[i].append(self.times[i][-1]+time_delay)
+            except:
+                pass
+        
+        self.updateGUI()
+        
+        print(self.values)
+        print(self.times)
 
-        print(self.values[self.frameCount-1])
-        print(self.times[self.frameCount-1])
+        return 
+
+    def updateGUI(self):
+
+        for i in range(self.frameCount):
+            # Updating the data on the Label
+            self.valueLabel[i].config(text=self.values[i][-1])
+
+            # Updating the graph
+            # access the graph individually
+            # access the data for that graph from self.values and self.times
+            # Access the Matplotlib_subplot from the figs list.
+            self.figs[i][1].plot(self.times[i], self.values[i])
+            
+            # re-draw it with the self.values and self.times list 
+            plt.xlim(10)
+            plt.ylim(10)
+            plt.xscale('linear')
+            plt.yscale('linear')
+            self.figs[i][2].draw()
 
 if __name__ == "__main__":
     DisplayGUI()

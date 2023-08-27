@@ -1,3 +1,7 @@
+"""
+The Portcom object, contains methods to communicate with the serial port.
+"""
+
 import serial
 import serial.tools.list_ports
 import csv
@@ -10,6 +14,7 @@ import time
 class PortCom:
     def __init__(self) -> None:
         self.initialized = False
+        self.read = False
         self.arduino = None
         self.baudrate = 9600
         # Channel array
@@ -22,23 +27,20 @@ class PortCom:
         port = selected_port
         baud = 9600
         print(port)
-        # self.arduino = serial.Serial(port=port, baudrate=baud)
-        # self.arduino.timeout = 0.1
-        # self.arduino.open()
         
         try:
-            self.arduino = serial.Serial(port=port, baudrate=baud)
-            self.arduino.timeout = 0.1
-            # self.arduino.open()
-            print("done")
+            #NOTE: timeout = None (will wait until reads a value)
+            self.arduino = serial.Serial(port=port, baudrate=baud, timeout=None)
+            print("Port Initialized")
             self.initialized = True
             
             
             return True
-        except:
+        except Exception as e:
             self.initialized = False
             print("Error")
-            tk.messagebox.showerror('Port Disconnected', 'Error: Could not connect to port')
+            # tk.messagebox.showerror('Port Disconnected', 'Error: Could not connect to port')
+            tk.messagebox.showerror('Port Not Connected', e)
 
     def closePort(self):
         try:
@@ -57,14 +59,6 @@ class PortCom:
     readings to the serial port which is then collected and returned.
     """
     def ask_read(self):
-        # self.arduino.reset_input_buffer()
-        # com = (str)(self.channels)
-        # self.arduino.write(com.encode("utf-8"))
-        # print(com.encode("utf-8"))
-        
-        # print("command sent: ", com.encode())
-
-
 
         if (self.arduino.in_waiting > 0):
             self.arduino.reset_input_buffer()
@@ -74,17 +68,40 @@ class PortCom:
             # print("Waiting......")
             self.readings = self.arduino.readline()
             # send the command through the com port
-            
-        # self.arduino.reset_input_buffer()
-            
-        
-        # self.readings = self.readings.decode("utf-8")
-        # self.readings = self.readings.rstrip().strip()
 
             print("received: ", self.readings.decode("utf-8"))
 
         return 0
     
+
+    def read_thread(self, widget_manager, displaygui):
+        """Read the serial port"""
+
+        while self.read:
+            self.arduino.reset_input_buffer()
+            com = (str)(self.channels)
+            self.arduino.write(com.encode())
+            response = self.arduino.readline()
+
+            # printing values TESTING
+            print(com)
+            print(response)
+            print(response.decode().rstrip().rsplit(", "))
+
+
+            # Updating the GUI
+            self.response_list = response.decode().rstrip().rsplit(", ")
+            displaygui.updateFrameData(self.response_list, int(widget_manager.sdelay.get()))
+
+            # writing the data to the file
+            if widget_manager.save_data.get():
+                # print(widget_manager.save_data.get())
+                widget_manager.save_to_file(self.response_list, 0)
+
+            time.sleep(int(widget_manager.sdelay.get()))
+        
+        
+
     """
     sets up the channels array to pass to the arduino 
     """
@@ -94,8 +111,11 @@ class PortCom:
     '''
     @return boolean - returns true if arduino is connected, false otherwise.
     '''
-    def getInitializedStatus(self):
+    def getPortStatus(self):
         return self.initialized
+
+    def setRead(self, read):
+        self.read = read
 
 
     def save_data_csv(self, readings, file_path):

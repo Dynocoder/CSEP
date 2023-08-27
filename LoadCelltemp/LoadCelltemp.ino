@@ -73,24 +73,7 @@ void loop() {
 
     String channelData = Serial.readString();
     // String channelData = "['c1t0', 'c2l0', 'c300', 'c400']";
-    // Serial.println(channelData);
-    String s = "['c1t0', 'c2l0', 'c300', 'c400']";
-    // String a = "aaa";
-    // if (channelData[4] == 't') {
-    //   Serial.println("Matched.....");
-    //   Serial.println(channelData[4]);
-    //   digitalWrite(LED_BUILTIN, LOW);
-    // } else {
-    //   digitalWrite(LED_BUILTIN, HIGH);
-    // }
-    // Serial.println(types(a));
-    // Serial.println(types(channelData));
-    // types(a);
-    // types(channelData);
-    // Serial.println(channelData);
     
-
-    Serial.println("Received");
     getChannelRequest(channelData);
     processChannelRequests();
     String dataString = "";
@@ -100,11 +83,11 @@ void loop() {
     }
 
     // Printing the Readings array string. 
-    // Serial.flush();
-    // Serial.println(dataString);
+    Serial.flush();
+    Serial.println(dataString);
 
   }
-  delay(50);
+  delay(10);
 
 }
 
@@ -145,7 +128,7 @@ void processChannelRequests() {
   for (int i = 0; i < channelCount; i++) {
     if (channels[i][2] == 't') {
       readings[i] = readThermocouple();
-      digitalWrite(LED_BUILTIN, HIGH);
+      // flashLed(3);
     } 
     // Load Cell 
     else if (channels[i][2] == 'l') {
@@ -153,6 +136,7 @@ void processChannelRequests() {
           // Load Cell Read Value
         if (channels[i][3] == '0') {
           readings[i] = readLoadCell();
+          // flashLed(5);
         }
         // Load Cell calibrate
         else if (channels[i][3] == 'c') {
@@ -168,6 +152,19 @@ void processChannelRequests() {
     // Serial.println(i);
   }
 }
+
+
+void flashLed(int n) {
+  for (int i = 0; i < n; i++) {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(100);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(100);
+  }
+  delay(1000);
+
+}
+
 
 
 // *********************** Thermocouple Methods ***********************
